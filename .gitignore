@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+.env.*
+.DS_Store
+pytest_cache/
+.coverage
+htmlcov/
+.cache/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# VS Code
+.vscode/

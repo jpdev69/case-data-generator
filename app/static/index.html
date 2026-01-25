@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Financial VA Case Simulator</title>
+  <style>
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin: 0; 
+      padding: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+    
+    .header {
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      color: white;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    .header p {
+      margin: 8px 0 0 0;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    .main-container {
+      display: flex;
+      height: calc(100vh - 80px);
+      gap: 0;
+    }
+    
+    .sidebar {
+      width: 280px;
+      background: white;
+      border-right: 1px solid #e0e0e0;
+      overflow-y: auto;
+      padding: 20px;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .sidebar-section {
+      margin-bottom: 24px;
+    }
+    
+    .sidebar-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #667eea;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    
+    .case-summary {
+      background: #f5f7ff;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    
+    .case-summary-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    
+    .case-summary-label {
+      color: #666;
+      font-weight: 600;
+    }
+    
+    .case-summary-value {
+      color: #667eea;
+      font-weight: 700;
+    }
+    
+    .sidebar-btn {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    
+    .sidebar-btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .sidebar-btn-primary:hover {
+      background: #5568d3;
+      transform: translateX(4px);
+    }
+    
+    .sidebar-btn-secondary {
+      background: #e8ecff;
+      color: #667eea;
+      border-left: 3px solid #667eea;
+    }
+    
+    .sidebar-btn-secondary:hover {
+      background: #dce3ff;
+    }
+    
+    .sidebar-btn:disabled {
+      background: #ccc;
+      color: #999;
+      cursor: not-allowed;
+    }
+    
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background: #fafbfc;
+    }
+    
+    .welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+    }
+    
+    .welcome-screen h2 {
+      color: #333;
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    
+    .welcome-screen p {
+      color: #666;
+      font-size: 14px;
+      max-width: 400px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    
+    .btn-large {
+      padding: 14px 32px;
+      font-size: 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-large:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+    
+    .case-display {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    
+    .case-header {
+      margin-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 16px;
+    }
+    
+    .case-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 12px 0;
+    }
+    
+    .case-meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .badge.role { background: #e3f2fd; color: #1976d2; }
+    .badge.urgency-high { background: #ffebee; color: #c62828; }
+    .badge.urgency-urgent { background: #ff5252; color: white; }
+    .badge.urgency-normal { background: #e8f5e9; color: #388e3c; }
+    .badge.deadline { background: #fff3e0; color: #f57c00; }
+    
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .tab {
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: #999;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    
+    .tab:hover {
+      color: #667eea;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .section-content {
+      color: #555;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+    
+    .section-content p {
+      margin: 0 0 12px 0;
+    }
+    
+    .deliverable {
+      background: #f9f9f9;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-left: 4px solid #667eea;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    
+    .deliverable-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    
+    .deliverable-desc {
+      color: #666;
+      font-size: 12px;
+    }
+    
+    .tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .tool {
+      background: #f0f0f0;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #555;
+    }
+    
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
+    }
+    
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      width: 90%;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 16px;
+    }
+    
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+      margin: 0;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    
+    .modal-close:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .objective {
+      background: #f9f9f9;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-left: 4px solid #4caf50;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    
+    .objective-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+    }
+    
+    .objective-desc {
+      color: #666;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    
+    .success-criteria {
+      font-size: 12px;
+      color: #555;
+      margin-left: 12px;
+    }
+    
+    .success-criteria ul {
+      margin: 4px 0;
+      padding-left: 20px;
+    }
+    
+    .success-criteria li {
+      margin-bottom: 4px;
+    }
+    
+    .mock-data-section {
+      background: #fff8f0;
+      border: 2px solid #ff9800;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    
+    .mock-data-summary {
+      background: white;
+      padding: 12px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      color: #333;
+      max-height: 300px;
+      overflow-y: auto;
+      line-height: 1.4;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 12px;
+    }
+    
+    .data-table th {
+      background: #ff9800;
+      color: white;
+      padding: 8px;
+      text-align: left;
+      font-weight: 600;
+    }
+    
+    .data-table td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .data-table tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: #667eea;
+      font-size: 16px;
+    }
+    
+    @media (max-width: 768px) {
+      .main-container {
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+        max-height: 200px;
+        display: flex;
+        gap: 20px;
+        overflow-x: auto;
+      }
+      
+      .sidebar-section {
+        flex-shrink: 0;
+        margin-bottom: 0;
+      }
+      
+      .content-area {
+        height: auto;
+      }
+      
+      .modal-content {
+        width: 95%;
+        max-height: 90vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎯 Financial VA Case Simulator</h1>
+    <p>Generate realistic business cases and master financial analysis</p>
+  </div>
+  
+  <div class="main-container">
+    <div class="sidebar">
+      <div class="sidebar-section" id="caseInfoSection" style="display: none;">
+        <div class="sidebar-title">📊 Case Info</div>
+        <div class="case-summary">
+          <div class="case-summary-item">
+            <span class="case-summary-label">Role</span>
+            <span class="case-summary-value" id="sidebarRole">—</span>
+          </div>
+          <div class="case-summary-item">
+            <span class="case-summary-label">Urgency</span>
+            <span class="case-summary-value" id="sidebarUrgency">—</span>
+          </div>
+          <div class="case-summary-item">
+            <span class="case-summary-label">Deadline</span>
+            <span class="case-summary-value" id="sidebarDeadline">—</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sidebar-section" id="actionsSection" style="display: none;">
+        <div class="sidebar-title">⚡ Actions</div>
+        <button class="sidebar-btn sidebar-btn-secondary" id="detailsBtn" onclick="openDetailsModal()">📝 View Details</button>
+        <button class="sidebar-btn sidebar-btn-secondary" id="mockDataBtn" onclick="openMockDataModal()" style="background: #fef3e0; color: #ff9800; border-left-color: #ff9800;">📊 Generate Data</button>
+        <button class="sidebar-btn sidebar-btn-secondary" id="newCaseBtn" onclick="fetchCase()" style="background: #f3e5f5; color: #7b1fa2; border-left-color: #7b1fa2;">🔄 New Case</button>
+      </div>
+      
+      <div class="sidebar-section" id="gettingStartedSection">
+        <div class="sidebar-title">🚀 Getting Started</div>
+        <button class="sidebar-btn sidebar-btn-primary" id="generateBtn" onclick="fetchCase()">Generate Your First Case</button>
+      </div>
+    </div>
+    
+    <div class="content-area">
+      <div id="content">
+        <div class="welcome-screen">
+          <h2>Welcome! 👋</h2>
+          <p>Generate a realistic business case to practice your financial analysis and data skills. Each case includes specific deliverables, deadlines, and success criteria.</p>
+          <button class="btn-large" onclick="fetchCase()">📋 Generate Your First Case</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Details Modal -->
+  <div id="detailsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">📝 Case Details</h2>
+        <button class="modal-close" onclick="closeDetailsModal()">✕</button>
+      </div>
+      <div id="detailsContent"></div>
+    </div>
+  </div>
+  
+  <!-- Mock Data Modal -->
+  <div id="mockDataModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">📊 Mock Data</h2>
+        <button class="modal-close" onclick="closeMockDataModal()">✕</button>
+      </div>
+      <div id="mockDataContent"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentCase = null;
+    let currentObjectives = null;
+    
+    // Modal functions
+    function openDetailsModal() {
+      if (!currentObjectives) {
+        document.getElementById('detailsContent').innerHTML = '<p class="loading">⏳ Loading objectives...</p>';
+        generateObjectives();
+      } else {
+        document.getElementById('detailsModal').classList.add('active');
+      }
+    }
+    
+    function closeDetailsModal() {
+      document.getElementById('detailsModal').classList.remove('active');
+    }
+    
+    function openMockDataModal() {
+      document.getElementById('mockDataContent').innerHTML = '<p class="loading">⏳ Generating mock data...</p>';
+      generateMockData();
+    }
+    
+    function closeMockDataModal() {
+      document.getElementById('mockDataModal').classList.remove('active');
+    }
+    
+    async function fetchCase() {
+      const contentDiv = document.getElementById('content');
+      contentDiv.innerHTML = '<div class="loading">⏳ Generating your case...</div>';
+      currentObjectives = null;
+      
+      try {
+        const res = await fetch('/api/cases/generate', { method: 'POST' });
+        if (!res.ok) {
+          contentDiv.innerHTML = '<div class="loading" style="color: red;">❌ Request failed: ' + res.status + '</div>';
+          return;
+        }
+        const data = await res.json();
+        currentCase = data;
+        displayCase(data);
+        updateSidebar(data);
+      } catch (err) {
+        contentDiv.innerHTML = '<div class="loading" style="color: red;">❌ Error: ' + err + '</div>';
+      }
+    }
+    
+    function displayCase(data) {
+      const urgencyClass = 'urgency-' + data.urgency;
+      let html = `
+        <div class="case-display">
+          <div class="case-header">
+            <h2 class="case-title">📋 ${data.title}</h2>
+            <div class="case-meta">
+              <span class="badge role">${data.role}</span>
+              <span class="badge ${urgencyClass}">${data.urgency.toUpperCase()}</span>
+              <span class="badge deadline">⏰ ${data.deadline_hours} hours</span>
+            </div>
+          </div>
+          
+          <div class="tabs">
+            <button class="tab active" onclick="switchTab('context')">📖 Context</button>
+            <button class="tab" onclick="switchTab('deliverables')">📦 Deliverables</button>
+            <button class="tab" onclick="switchTab('tools')">🔧 Tools</button>
+            <button class="tab" onclick="switchTab('steps')">✅ Steps</button>
+          </div>
+          
+          <div id="context" class="tab-content active">
+            <div class="section-content">${data.context}</div>
+          </div>
+          
+          <div id="deliverables" class="tab-content">
+            ${data.deliverables.map((d, i) => `
+              <div class="deliverable">
+                <div class="deliverable-name">${i + 1}. ${d.name}</div>
+                <div class="deliverable-desc">${d.description}</div>
+                <div class="deliverable-desc" style="margin-top: 4px; font-style: italic;">
+                  File type: ${d.file_types.join(', ')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div id="tools" class="tab-content">
+            <div class="tools">
+              ${data.tools.map(t => '<span class="tool">' + t + '</span>').join('')}
+            </div>
+          </div>
+          
+          <div id="steps" class="tab-content">
+            <div class="section-content">
+              <p>1. Review the key objectives to understand what needs to be achieved</p>
+              <p>2. Create the required deliverables using the specified tools</p>
+              <p>3. Ensure all file formats and naming conventions are correct</p>
+              <p>4. Submit your work for automated evaluation</p>
+              <p>5. Review feedback and revise if needed</p>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('content').innerHTML = html;
+    }
+    
+    function updateSidebar(data) {
+      document.getElementById('caseInfoSection').style.display = 'block';
+      document.getElementById('actionsSection').style.display = 'block';
+      document.getElementById('gettingStartedSection').style.display = 'none';
+      document.getElementById('sidebarRole').textContent = data.role;
+      document.getElementById('sidebarUrgency').textContent = data.urgency.toUpperCase();
+      document.getElementById('sidebarDeadline').textContent = data.deadline_hours + 'h';
+    }
+    
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      
+      // Show selected tab
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+    
+    async function generateObjectives() {
+      const detailsContent = document.getElementById('detailsContent');
+      
+      try {
+        if (!currentCase) {
+          detailsContent.innerHTML = '<p style="color: red;">❌ Case data not available</p>';
+          return;
+        }
+        
+        const res = await fetch(`/api/cases/objectives/generate`, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentCase)
+        });
+        if (!res.ok) {
+          detailsContent.innerHTML = '<p style="color: red;">❌ Failed to generate objectives</p>';
+          return;
+        }
+        const objectives = await res.json();
+        currentObjectives = objectives;
+        
+        detailsContent.innerHTML = objectives.map(obj => `
+          <div class="objective">
+            <div class="objective-title">• ${obj.title}</div>
+            <div class="objective-desc">${obj.description}</div>
+            ${obj.success_criteria.length > 0 ? `
+              <div class="success-criteria">
+                <strong>Success Criteria:</strong>
+                <ul>
+                  ${obj.success_criteria.map(c => '<li>' + c + '</li>').join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+        
+        document.getElementById('detailsModal').classList.add('active');
+      } catch (err) {
+        detailsContent.innerHTML = '<p style="color: red;">❌ Error: ' + err + '</p>';
+      }
+    }
+    
+    async function generateMockData() {
+      const mockDataContent = document.getElementById('mockDataContent');
+      
+      try {
+        if (!currentCase) {
+          mockDataContent.innerHTML = '<p style="color: red;">❌ Case data not available</p>';
+          return;
+        }
+        
+        const res = await fetch(`/api/cases/mock-data/generate`, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentCase)
+        });
+        if (!res.ok) {
+          mockDataContent.innerHTML = '<p style="color: red;">❌ Failed to generate mock data</p>';
+          return;
+        }
+        const result = await res.json();
+        
+        // Create mock data section
+        let mockDataHtml = `
+          <div class="mock-data-section">
+            <div style="margin-bottom: 12px;">
+              <strong style="font-size: 14px; color: #ff9800;">Summary</strong>
+            </div>
+            <div class="mock-data-summary">${result.summary.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+        `;
+        
+        // Add sample data table if available
+        const mockData = result.data;
+        if (mockData.transactions) {
+          mockDataHtml += `
+            <div style="margin-top: 16px;">
+              <strong style="font-size: 13px;">Sample Transactions (showing first 5):</strong>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${mockData.transactions.slice(0, 5).map(t => `
+                    <tr>
+                      <td>${t.date}</td>
+                      <td>${t.description}</td>
+                      <td>${t.category}</td>
+                      <td>$${t.amount}</td>
+                      <td>${t.status}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else if (mockData.metrics) {
+          mockDataHtml += `
+            <div style="margin-top: 16px;">
+              <strong style="font-size: 13px;">Sample Metrics (showing first 5):</strong>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Current Value</th>
+                    <th>Benchmark</th>
+                    <th>Variance %</th>
+                    <th>Trend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${mockData.metrics.slice(0, 5).map(m => `
+                    <tr>
+                      <td>${m.metric}</td>
+                      <td>${m.current_value}</td>
+                      <td>${m.benchmark_value}</td>
+                      <td>${m.variance_percent}%</td>
+                      <td>${m.trend}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        }
+        
+        mockDataHtml += `
+          <div style="margin-top: 12px; font-size: 12px; color: #666;">
+            <strong>💾 Note:</strong> Copy this mock data and use it to populate your spreadsheets and analysis files.
+            <div style="margin-top: 8px;">
+              <button onclick="downloadMockDataExcel('${currentCase.id}')" style="background: #2196F3; padding: 8px 16px; font-size: 12px; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                📥 Download as Excel
+              </button>
+            </div>
+          </div>
+          </div>
+        `;
+        
+        mockDataContent.innerHTML = mockDataHtml;
+        document.getElementById('mockDataModal').classList.add('active');
+      } catch (err) {
+        console.error('Mock data error:', err);
+        mockDataContent.innerHTML = '<p style="color: red;">❌ Error: ' + err + '</p>';
+      }
+    }
+    
+    async function downloadMockDataExcel(caseId) {
+      try {
+        if (!currentCase) {
+          alert('Case data not available');
+          return;
+        }
+        
+        const res = await fetch(`/api/cases/mock-data/download`, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentCase)
+        });
+        
+        if (!res.ok) {
+          alert('Failed to download Excel file');
+          return;
+        }
+        
+        // Get the filename from response headers
+        const contentDisposition = res.headers.get('content-disposition');
+        let filename = 'mock_data.xlsx';
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename=([^;]+)/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+        
+        // Download the file
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Download error:', err);
+        alert('Error downloading file: ' + err);
+      }
+    }
+    
+    // Close modals when clicking outside
+    document.addEventListener('click', function(e) {
+      const detailsModal = document.getElementById('detailsModal');
+      const mockDataModal = document.getElementById('mockDataModal');
+      
+      if (e.target === detailsModal) {
+        closeDetailsModal();
+      }
+      if (e.target === mockDataModal) {
+        closeMockDataModal();
+      }
+    });
+  </script>
+</body>
+</html>
