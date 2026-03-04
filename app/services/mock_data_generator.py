@@ -5,71 +5,87 @@ from app.schemas.cases import Case
 
 def generate_mock_data(case: Case) -> dict:
     """
-    Generate mock/sample data based on case type and, when known, the specific case id.
+    Generate mock/sample data based on the case's data_profile.
+
+    Dispatch priority:
+      1. Explicit ``case.data_profile`` (set by the generator) — guaranteed match.
+      2. Legacy hard-coded case-id checks (for the 9 sample cases).
+      3. Keyword matching on title/context (kept only as a safety-net for
+         externally-constructed Case objects that lack a profile).
+      4. Fallback by ``case_type``.
     """
-    # Normalize text for routing when case ids are dynamic
+
+    # ---- 1. Profile-based dispatch (primary path) -------------------------
+    _PROFILE_GENERATORS = {
+        # Financial profiles
+        "cashflow": _generate_monthly_cashflow_data,
+        "expense_audit": _generate_expense_audit_data,
+        "revenue_forecast": _generate_revenue_forecast_data,
+        "payroll": _generate_payroll_data,
+        "profitability": _generate_monthly_cashflow_data,   # reuses cashflow shape (P&L-like)
+        "reconciliation": _generate_financial_mock_data,     # general ledger reconciliation
+        # Analysis profiles
+        "customer_analytics": _generate_customer_analytics_data,
+        "performance_metrics": _generate_performance_metrics_data,
+        "api_performance": _generate_api_performance_nonprofit_data,
+        "marketing_funnel": _generate_marketing_funnel_data,
+        "marketing_attribution": _generate_marketing_attribution_quality_data,
+        "ops_sla": _generate_ops_sla_data,
+        "recruitment": _generate_recruitment_analysis_data,
+        "data_quality": _generate_data_quality_analysis_data,
+        "social_sentiment": _generate_social_sentiment_analysis_data,
+        "mobile_app_behavior": _generate_mobile_app_behavior_data,
+        "feature_adoption": _generate_feature_adoption_gaps_data,
+        "fraud_detection": _generate_fraud_detection_data,
+    }
+
+    if case.data_profile and case.data_profile in _PROFILE_GENERATORS:
+        return _PROFILE_GENERATORS[case.data_profile](case)
+
+    # ---- 2. Legacy case-id overrides (sample cases without profile) -------
+    _LEGACY_ID_MAP = {
+        "case-monthly-cashflow": _generate_monthly_cashflow_data,
+        "case-expense-audit": _generate_expense_audit_data,
+        "case-revenue-forecast": _generate_revenue_forecast_data,
+        "case-payroll-reconciliation": _generate_payroll_data,
+        "case-customer-analytics": _generate_customer_analytics_data,
+        "case-performance-metrics": _generate_performance_metrics_data,
+        "case-api-performance-nonprofit": _generate_api_performance_nonprofit_data,
+        "case-marketing-funnel": _generate_marketing_funnel_data,
+        "case-ops-sla-quality": _generate_ops_sla_data,
+    }
+    if case.id in _LEGACY_ID_MAP:
+        return _LEGACY_ID_MAP[case.id](case)
+
+    # ---- 3. Keyword fallback (safety-net) ---------------------------------
     context_lower = (case.context or "").lower()
     title_lower = (case.title or "").lower()
     text_lower = f"{title_lower} {context_lower}"
 
-    # Case-specific overrides to align with stated business context
-    if case.id == "case-monthly-cashflow":
-        return _generate_monthly_cashflow_data(case)
-    if case.id == "case-expense-audit":
-        return _generate_expense_audit_data(case)
-    if case.id == "case-revenue-forecast":
-        return _generate_revenue_forecast_data(case)
-    if case.id == "case-payroll-reconciliation":
-        return _generate_payroll_data(case)
-    if case.id == "case-customer-analytics":
-        return _generate_customer_analytics_data(case)
-    if case.id == "case-performance-metrics":
-        return _generate_performance_metrics_data(case)
-    if case.id == "case-api-performance-nonprofit":
-        return _generate_api_performance_nonprofit_data(case)
-    if case.id == "case-marketing-funnel":
-        return _generate_marketing_funnel_data(case)
-    if case.id == "case-ops-sla-quality":
-        return _generate_ops_sla_data(case)
+    _KEYWORD_ROUTES: list[tuple[list[str], callable]] = [
+        (["cash flow", "cashflow", "runway", "ar hygiene", "receivable"], _generate_monthly_cashflow_data),
+        (["expense", "budget", "variance", "audit"], _generate_expense_audit_data),
+        (["revenue forecast", "mrr", "forecast", "expansion", "churn"], _generate_revenue_forecast_data),
+        (["payroll", "contractor", "reconciliation", "tax compliance"], _generate_payroll_data),
+        (["customer", "segmentation", "behavior", "churn predictor", "retention"], _generate_customer_analytics_data),
+        (["product performance", "engagement", "feature", "anomaly", "dau"], _generate_performance_metrics_data),
+        (["api", "endpoint", "request", "response time", "latency"], _generate_api_performance_nonprofit_data),
+        (["attribution", "marketing attribution", "attribution accuracy"], _generate_marketing_attribution_quality_data),
+        (["marketing", "funnel", "cohort", "cac", "ltv"], _generate_marketing_funnel_data),
+        (["sla", "backlog", "support queue", "quality"], _generate_ops_sla_data),
+        (["hiring", "recruitment", "bottleneck", "candidate"], _generate_recruitment_analysis_data),
+        (["inconsistencies", "data quality", "discrepancies"], _generate_data_quality_analysis_data),
+        (["social media", "sentiment", "brand health"], _generate_social_sentiment_analysis_data),
+        (["mobile app", "feature discovery", "app engagement"], _generate_mobile_app_behavior_data),
+        (["feature adoption", "adoption gap", "usage pattern", "product usage"], _generate_feature_adoption_gaps_data),
+        (["fraud", "chargeback", "payment", "transaction risk", "dispute"], _generate_fraud_detection_data),
+    ]
 
-    # Context/title driven routing for dynamically created cases
-    if any(keyword in text_lower for keyword in ["cash flow", "cashflow", "runway", "ar hygiene", "receivable"]):
-        return _generate_monthly_cashflow_data(case)
-    if any(keyword in text_lower for keyword in ["expense", "budget", "variance", "audit"]):
-        return _generate_expense_audit_data(case)
-    if any(keyword in text_lower for keyword in ["revenue forecast", "mrr", "forecast", "expansion", "churn"]):
-        return _generate_revenue_forecast_data(case)
-    if any(keyword in text_lower for keyword in ["payroll", "contractor", "reconciliation", "tax compliance"]):
-        return _generate_payroll_data(case)
-    if any(keyword in text_lower for keyword in ["customer", "segmentation", "behavior", "churn predictor", "retention"]):
-        return _generate_customer_analytics_data(case)
-    if any(keyword in text_lower for keyword in ["product performance", "engagement", "feature", "anomaly", "dau", "retention"]):
-        return _generate_performance_metrics_data(case)
-    if any(keyword in text_lower for keyword in ["api", "endpoint", "request", "response time", "latency"]):
-        return _generate_api_performance_nonprofit_data(case)
-    # Attribution quality (check before general marketing to avoid catch-all)
-    if any(keyword in text_lower for keyword in ["attribution", "marketing attribution", "attribution accuracy", "channel attribution", "attribution tracking"]):
-        return _generate_marketing_attribution_quality_data(case)
-    if any(keyword in text_lower for keyword in ["marketing", "funnel", "cohort", "cac", "ltv"]):
-        return _generate_marketing_funnel_data(case)
-    if any(keyword in text_lower for keyword in ["sla", "backlog", "support queue", "quality"]):
-        return _generate_ops_sla_data(case)
-    if any(keyword in text_lower for keyword in ["hiring", "recruitment", "bottleneck", "recruiting process", "candidate"]):
-        return _generate_recruitment_analysis_data(case)
-    if any(keyword in text_lower for keyword in ["inconsistencies", "data quality", "inconsistent metrics", "discrepancies", "reporting mismatch"]):
-        return _generate_data_quality_analysis_data(case)
-    if any(keyword in text_lower for keyword in ["social media", "sentiment", "brand health", "brand sentiment", "social listening"]):
-        return _generate_social_sentiment_analysis_data(case)
-    if any(keyword in text_lower for keyword in ["mobile app", "feature discovery", "feature discoverability", "user behavior", "app engagement"]):
-        return _generate_mobile_app_behavior_data(case)
+    for keywords, gen_fn in _KEYWORD_ROUTES:
+        if any(kw in text_lower for kw in keywords):
+            return gen_fn(case)
 
-    # Context-driven overrides for dynamic cases (feature adoption / usage gaps)
-    if any(keyword in text_lower for keyword in ["feature adoption", "adoption gap", "usage pattern", "product usage"]):
-        return _generate_feature_adoption_gaps_data(case)
-    if any(keyword in text_lower for keyword in ["fraud", "chargeback", "payment", "transaction risk", "dispute"]):
-        return _generate_fraud_detection_data(case)
-
-    # Default by case_type
+    # ---- 4. Final fallback by case_type -----------------------------------
     if case.case_type == "analysis":
         return _generate_analysis_mock_data(case)
     return _generate_financial_mock_data(case)

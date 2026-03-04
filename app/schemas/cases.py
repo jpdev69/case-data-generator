@@ -50,6 +50,16 @@ class Case(BaseModel):
     context: str
     role: str
     case_type: str = Field(default="financial", description="Type of case: 'financial' or 'analysis'")
+    data_profile: Optional[str] = Field(
+        default=None,
+        description=(
+            "Explicit data-generation profile that determines which mock-data "
+            "generator to use (e.g. 'cashflow', 'expense_audit', 'revenue_forecast', "
+            "'payroll', 'customer_analytics', 'ops_sla', etc.). "
+            "When set, the mock-data generator dispatches on this value instead of "
+            "brittle keyword matching, guaranteeing the dataset matches the case scenario."
+        ),
+    )
     tools: List[str] = Field(default_factory=list)
     deadline_hours: int = Field(default=72, ge=1)
     urgency: str = Field(default="normal")
